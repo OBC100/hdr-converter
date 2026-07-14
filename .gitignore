@@ -21,8 +21,9 @@ _t.*
 *.exr
 *.hdr
 
-# RTX Video SDK 专有运行时（勿提交 NVIDIA DLL）
+# RTX Video SDK 专有运行时（勿提交 NVIDIA DLL / SDK 本体）
 **/nvngx_*.dll
 **/NV_RTX_VIDEO_SDK/
+/RTX Video SDK/
 native/rtx_bridge/build/
 native/rtx_bridge/out/
