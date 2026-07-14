@@ -52,6 +52,59 @@ class GainMapScale(int, Enum):
     EIGHTH = 8
 
 
+class RtxEnhanceMode(str, Enum):
+    """NVIDIA RTX Video SDK 增强（TrueHDR / VSR）。"""
+
+    OFF = "off"
+    THDR = "thdr"
+    VSR = "vsr"
+    VSR_THDR = "vsr_thdr"
+
+
+class RtxVsrQuality(str, Enum):
+    BICUBIC = "bicubic"
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    ULTRA = "ultra"
+
+
+DEFAULT_RTX_CONTRAST = 125
+DEFAULT_RTX_SATURATION = 100
+DEFAULT_RTX_MIDDLE_GRAY = 25
+DEFAULT_RTX_MAX_LUMINANCE = 1000
+DEFAULT_RTX_VSR_SCALE = 2
+
+RTX_ENHANCE_ORDER: tuple[RtxEnhanceMode, ...] = (
+    RtxEnhanceMode.OFF,
+    RtxEnhanceMode.THDR,
+    RtxEnhanceMode.VSR,
+    RtxEnhanceMode.VSR_THDR,
+)
+
+RTX_VSR_QUALITY_ORDER: tuple[RtxVsrQuality, ...] = (
+    RtxVsrQuality.BICUBIC,
+    RtxVsrQuality.LOW,
+    RtxVsrQuality.MEDIUM,
+    RtxVsrQuality.HIGH,
+    RtxVsrQuality.ULTRA,
+)
+
+
+def rtx_uses_thdr(mode: RtxEnhanceMode) -> bool:
+    return mode in (RtxEnhanceMode.THDR, RtxEnhanceMode.VSR_THDR)
+
+
+def rtx_uses_vsr(mode: RtxEnhanceMode) -> bool:
+    return mode in (RtxEnhanceMode.VSR, RtxEnhanceMode.VSR_THDR)
+
+
+def normalize_rtx_vsr_scale(scale: int) -> int:
+    if scale not in (1, 2, 4):
+        raise ValueError(f"rtx_vsr_scale 须为 1/2/4，收到 {scale}")
+    return scale
+
+
 def gainmap_allowed(curve: TransferCurve) -> bool:
     return curve in (TransferCurve.PQ, TransferCurve.HLG)
 

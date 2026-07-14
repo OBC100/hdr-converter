@@ -43,11 +43,22 @@ from ..core.encoders.base import OutputFormat
 from ..core.hdr_options import (
     DEFAULT_GAINMAP_BITS,
     DEFAULT_GAINMAP_SCALE,
+    DEFAULT_RTX_CONTRAST,
+    DEFAULT_RTX_MAX_LUMINANCE,
+    DEFAULT_RTX_MIDDLE_GRAY,
+    DEFAULT_RTX_SATURATION,
+    DEFAULT_RTX_VSR_SCALE,
+    RTX_ENHANCE_ORDER,
+    RTX_VSR_QUALITY_ORDER,
     GainMapScale,
     HdrDeliveryMode,
+    RtxEnhanceMode,
+    RtxVsrQuality,
     SdrToneMap,
     default_sdr_tonemap,
     resolve_hdr_delivery,
+    rtx_uses_thdr,
+    rtx_uses_vsr,
 )
 from ..core.jpeg_encode import DEFAULT_JPEG_SUBSAMPLING, JpegSubsampling
 from ..core.decoders.jxr_decoder import is_jxr_supported
@@ -203,6 +214,26 @@ class EncodeSettingCard(SettingCard):
         self.comboBox.blockSignals(False)
 
 
+class SpinSettingCard(SettingCard):
+    """整数 SpinBox 设置卡片。"""
+
+    def __init__(
+        self,
+        icon: FluentIcon,
+        title: str,
+        *,
+        minimum: int = 0,
+        maximum: int = 10000,
+        parent: QWidget | None = None,
+    ) -> None:
+        super().__init__(icon, title, None, parent)
+        self.spinBox = CompactSpinBox(self)
+        self.spinBox.setRange(minimum, maximum)
+        self.spinBox.setFixedWidth(_CONTROL_WIDTH)
+        self.hBoxLayout.addWidget(self.spinBox, 0, Qt.AlignmentFlag.AlignRight)
+        self.hBoxLayout.addSpacing(_CARD_RIGHT_GAP)
+
+
 def _set_group_title(group: SettingCardGroup, title: str) -> None:
     group.titleLabel.setText(title)
 
@@ -224,6 +255,8 @@ class ConvertInterface(QWidget):
         self._sdr_tonemap = SdrToneMap.HABLE_MAX
         self._gainmap_scale = DEFAULT_GAINMAP_SCALE
         self._jpeg_subsampling = DEFAULT_JPEG_SUBSAMPLING
+        self._rtx_enhance = RtxEnhanceMode.OFF
+        self._rtx_vsr_quality = RtxVsrQuality.HIGH
         self.setObjectName("convertInterface")
 
         outer = QHBoxLayout(self)
@@ -284,6 +317,43 @@ class ConvertInterface(QWidget):
             ]
         )
         options_layout.addWidget(self.adv_group)
+
+        self.rtx_group = SettingCardGroup("", self)
+        self.rtx_mode_card = ComboSettingCard(FluentIcon.ZOOM, "", parent=self.rtx_group)
+        self.rtx_vsr_quality_card = ComboSettingCard(
+            FluentIcon.FULL_SCREEN, "", parent=self.rtx_group
+        )
+        self.rtx_vsr_scale_card = ComboSettingCard(
+            FluentIcon.PHOTO, "", parent=self.rtx_group
+        )
+        self.rtx_contrast_card = SpinSettingCard(
+            FluentIcon.BRIGHTNESS, "", minimum=0, maximum=200, parent=self.rtx_group
+        )
+        self.rtx_saturation_card = SpinSettingCard(
+            FluentIcon.PALETTE, "", minimum=0, maximum=200, parent=self.rtx_group
+        )
+        self.rtx_middle_gray_card = SpinSettingCard(
+            FluentIcon.VIEW, "", minimum=1, maximum=100, parent=self.rtx_group
+        )
+        self.rtx_max_luminance_card = SpinSettingCard(
+            FluentIcon.BRIGHTNESS, "", minimum=100, maximum=10000, parent=self.rtx_group
+        )
+        self.rtx_contrast_card.spinBox.setValue(DEFAULT_RTX_CONTRAST)
+        self.rtx_saturation_card.spinBox.setValue(DEFAULT_RTX_SATURATION)
+        self.rtx_middle_gray_card.spinBox.setValue(DEFAULT_RTX_MIDDLE_GRAY)
+        self.rtx_max_luminance_card.spinBox.setValue(DEFAULT_RTX_MAX_LUMINANCE)
+        self.rtx_group.addSettingCards(
+            [
+                self.rtx_mode_card,
+                self.rtx_vsr_quality_card,
+                self.rtx_vsr_scale_card,
+                self.rtx_contrast_card,
+                self.rtx_saturation_card,
+                self.rtx_middle_gray_card,
+                self.rtx_max_luminance_card,
+            ]
+        )
+        options_layout.addWidget(self.rtx_group)
         # 不 stretch：选项紧凑排在上方，底部留白由 ScrollArea 自然产生
 
         self.fmt_card.comboBox.currentIndexChanged.connect(self._on_format_changed)
@@ -296,6 +366,9 @@ class ConvertInterface(QWidget):
             self._on_jpeg_subsampling_changed
         )
         self.quant_card.comboBox.currentIndexChanged.connect(self._on_quant_changed)
+        self.rtx_mode_card.comboBox.currentIndexChanged.connect(self._on_rtx_ui_changed)
+        self.rtx_vsr_quality_card.comboBox.currentIndexChanged.connect(self._on_rtx_ui_changed)
+        self.rtx_vsr_scale_card.comboBox.currentIndexChanged.connect(self._on_rtx_ui_changed)
         self.out_card.choose_clicked.connect(self._pick_output_dir)
         self.out_card.clear_clicked.connect(self._clear_output_dir)
 
@@ -350,12 +423,14 @@ class ConvertInterface(QWidget):
         self.encode_card.spinBox.setValue(90)
         self._update_quant_ui()
         self._update_hdr_delivery_ui()
+        self._update_rtx_ui()
 
     def retranslate(self) -> None:
         tr = self._tr
         self.preview_panel.retranslate(tr)
         _set_group_title(self.output_group, tr.tr("panel.options"))
         _set_group_title(self.adv_group, tr.tr("group.advanced"))
+        _set_group_title(self.rtx_group, tr.tr("group.rtx"))
 
         self.fmt_card.titleLabel.setText(tr.tr("label.format"))
         self.gamut_card.titleLabel.setText(tr.tr("label.gamut"))
@@ -367,6 +442,14 @@ class ConvertInterface(QWidget):
         self._refresh_output_button()
 
         self.quant_card.titleLabel.setText(tr.tr("label.quantize"))
+        self.rtx_mode_card.titleLabel.setText(tr.tr("label.rtx_enhance"))
+        self.rtx_vsr_quality_card.titleLabel.setText(tr.tr("label.rtx_vsr_quality"))
+        self.rtx_vsr_scale_card.titleLabel.setText(tr.tr("label.rtx_vsr_scale"))
+        self.rtx_contrast_card.titleLabel.setText(tr.tr("label.rtx_contrast"))
+        self.rtx_saturation_card.titleLabel.setText(tr.tr("label.rtx_saturation"))
+        self.rtx_middle_gray_card.titleLabel.setText(tr.tr("label.rtx_middle_gray"))
+        self.rtx_max_luminance_card.titleLabel.setText(tr.tr("label.rtx_max_luminance"))
+        self._update_rtx_ui()
         self.delivery_card.titleLabel.setText(tr.tr("label.hdr_delivery"))
         self.tonemap_card.titleLabel.setText(tr.tr("label.sdr_tonemap"))
         self.gainmap_scale_card.titleLabel.setText(tr.tr("label.gainmap_scale"))
@@ -533,6 +616,53 @@ class ConvertInterface(QWidget):
             self._gainmap_scale = scale_list[
                 self.gainmap_scale_card.comboBox.currentIndex()
             ].value
+
+    def _on_rtx_ui_changed(self, _index: int | None = None) -> None:
+        modes = list(RTX_ENHANCE_ORDER)
+        m_idx = self.rtx_mode_card.comboBox.currentIndex()
+        if 0 <= m_idx < len(modes):
+            self._rtx_enhance = modes[m_idx]
+        qualities = list(RTX_VSR_QUALITY_ORDER)
+        q_idx = self.rtx_vsr_quality_card.comboBox.currentIndex()
+        if 0 <= q_idx < len(qualities):
+            self._rtx_vsr_quality = qualities[q_idx]
+        self._update_rtx_param_visibility()
+
+    def _update_rtx_param_visibility(self) -> None:
+        mode = self._rtx_enhance
+        show = mode != RtxEnhanceMode.OFF
+        thdr = rtx_uses_thdr(mode)
+        vsr = rtx_uses_vsr(mode)
+        self.rtx_vsr_quality_card.setVisible(show and vsr)
+        self.rtx_vsr_scale_card.setVisible(show and vsr)
+        self.rtx_contrast_card.setVisible(show and thdr)
+        self.rtx_saturation_card.setVisible(show and thdr)
+        self.rtx_middle_gray_card.setVisible(show and thdr)
+        self.rtx_max_luminance_card.setVisible(show and thdr)
+
+    def _update_rtx_ui(self) -> None:
+        tr = self._tr
+        mode_labels = [tr.tr(f"rtx.mode.{m.value}") for m in RTX_ENHANCE_ORDER]
+        self.rtx_mode_card.fill(
+            mode_labels, index=list(RTX_ENHANCE_ORDER).index(self._rtx_enhance)
+        )
+        q_labels = [tr.tr(f"rtx.vsr_quality.{q.value}") for q in RTX_VSR_QUALITY_ORDER]
+        self.rtx_vsr_quality_card.fill(
+            q_labels, index=list(RTX_VSR_QUALITY_ORDER).index(self._rtx_vsr_quality)
+        )
+        scale_vals = (1, 2, 4)
+        scale_labels = [tr.tr(f"rtx.vsr_scale.{s}") for s in scale_vals]
+        cur_scale = DEFAULT_RTX_VSR_SCALE
+        try:
+            cur_idx = self.rtx_vsr_scale_card.comboBox.currentIndex()
+            if 0 <= cur_idx < len(scale_vals):
+                cur_scale = scale_vals[cur_idx]
+        except Exception:
+            pass
+        if cur_scale not in scale_vals:
+            cur_scale = DEFAULT_RTX_VSR_SCALE
+        self.rtx_vsr_scale_card.fill(scale_labels, index=scale_vals.index(cur_scale))
+        self._update_rtx_param_visibility()
 
     def _update_jpeg_subsampling_ui(self) -> None:
         fmt = self._current_output_format()
@@ -728,7 +858,11 @@ class ConvertInterface(QWidget):
             quantize_bits = clamp_quant_bits(self._quant_bits, fmt, curve)
         self._on_hdr_ui_changed()
         self._on_jpeg_subsampling_changed()
+        self._on_rtx_ui_changed()
         delivery = resolve_hdr_delivery(fmt, curve, self._hdr_delivery)
+        scale_vals = (1, 2, 4)
+        s_idx = self.rtx_vsr_scale_card.comboBox.currentIndex()
+        rtx_scale = scale_vals[s_idx] if 0 <= s_idx < len(scale_vals) else DEFAULT_RTX_VSR_SCALE
         return ConvertSettings(
             output_format=fmt,
             gamut=gamut_map[self.gamut_card.comboBox.currentIndex()],
@@ -744,6 +878,13 @@ class ConvertInterface(QWidget):
             sdr_tonemap=self._sdr_tonemap,
             jpeg_subsampling=self._jpeg_subsampling,
             embed_icc=(None, True, False)[self.embed_icc_card.comboBox.currentIndex()],
+            rtx_enhance=self._rtx_enhance,
+            rtx_contrast=self.rtx_contrast_card.spinBox.value(),
+            rtx_saturation=self.rtx_saturation_card.spinBox.value(),
+            rtx_middle_gray=self.rtx_middle_gray_card.spinBox.value(),
+            rtx_max_luminance=self.rtx_max_luminance_card.spinBox.value(),
+            rtx_vsr_quality=self._rtx_vsr_quality,
+            rtx_vsr_scale=rtx_scale,
         )
 
 

@@ -9,7 +9,14 @@ from .core.cicp import Gamut, TransferCurve
 from .core.color_pipeline import QUANTIZE_BITS_CHOICES
 from .core.converter import ConvertSettings, convert_file
 from .core.encoders.base import OutputFormat
-from .core.hdr_options import CONTAINER_BITS_CHOICES, GainMapScale, HdrDeliveryMode, SdrToneMap
+from .core.hdr_options import (
+    CONTAINER_BITS_CHOICES,
+    GainMapScale,
+    HdrDeliveryMode,
+    RtxEnhanceMode,
+    RtxVsrQuality,
+    SdrToneMap,
+)
 from .core.jpeg_encode import normalize_jpeg_subsampling
 
 
@@ -99,6 +106,28 @@ def _parse_args() -> argparse.Namespace:
         action="store_false",
         help="强制不嵌入 ICC（覆盖 PNG/JPG/JXL 默认）",
     )
+    parser.add_argument(
+        "--rtx-enhance",
+        choices=[e.value for e in RtxEnhanceMode],
+        default=RtxEnhanceMode.OFF.value,
+        help="NVIDIA RTX Video：off / thdr / vsr / vsr_thdr（需 hdr_rtx_bridge.dll）",
+    )
+    parser.add_argument("--rtx-contrast", type=int, default=125)
+    parser.add_argument("--rtx-saturation", type=int, default=100)
+    parser.add_argument("--rtx-middle-gray", type=int, default=25)
+    parser.add_argument("--rtx-max-luminance", type=int, default=1000)
+    parser.add_argument(
+        "--rtx-vsr-quality",
+        choices=[e.value for e in RtxVsrQuality],
+        default=RtxVsrQuality.HIGH.value,
+    )
+    parser.add_argument(
+        "--rtx-vsr-scale",
+        type=int,
+        choices=[1, 2, 4],
+        default=2,
+        help="VSR 输出倍率",
+    )
     parser.set_defaults(embed_icc=None)
     return parser.parse_args()
 
@@ -121,6 +150,13 @@ def main() -> None:
         sdr_tonemap=SdrToneMap(args.sdr_tonemap) if args.sdr_tonemap else None,
         jpeg_subsampling=normalize_jpeg_subsampling(args.jpeg_subsampling),
         embed_icc=args.embed_icc,
+        rtx_enhance=RtxEnhanceMode(args.rtx_enhance),
+        rtx_contrast=args.rtx_contrast,
+        rtx_saturation=args.rtx_saturation,
+        rtx_middle_gray=args.rtx_middle_gray,
+        rtx_max_luminance=args.rtx_max_luminance,
+        rtx_vsr_quality=RtxVsrQuality(args.rtx_vsr_quality),
+        rtx_vsr_scale=args.rtx_vsr_scale,
     )
     result = convert_file(args.input, output, settings)
     msg = (

@@ -12,6 +12,7 @@
 - **HDR 交付**: Direct（cICP/NCLX）或 Gain Map mono/color
 - **界面**: Fluent Windows GUI（多格式拖放；Win32 可选 D3D HDR 预览）
 - **CLI**: 同参数集批处理
+- **可选 RTX**：NVIDIA TrueHDR / VSR（侧栏「HDR 超分」；需编译桥接 DLL，见 [docs/RTX_VIDEO.md](docs/RTX_VIDEO.md)）
 
 ## 安装
 
@@ -53,11 +54,18 @@ python -m hdr_converter.cli input.jxr -o output.jpg --format jpg --gamut bt2020 
 
 常用参数：`--quantize-bits`、`--level`、`--gainmap-scale`、`--sdr-tonemap`、`--jpeg-subsampling`
 
+RTX（需 `hdr_rtx_bridge.dll`）：
+
+```bash
+python -m hdr_converter.cli input.jpg -o out.avif --format avif --rtx-enhance thdr --rtx-max-luminance 1000
+```
+
 ## 文档
 
 | 文档 | 内容 |
 |------|------|
 | [docs/STATUS.md](docs/STATUS.md) | **验收状态、默认参数、路线图** |
+| [docs/RTX_VIDEO.md](docs/RTX_VIDEO.md) | NVIDIA RTX Video（TrueHDR / VSR） |
 | [docs/PROJECT.md](docs/PROJECT.md) | 产品定位、架构、管线、可配置参数 |
 | [docs/MULTI_FORMAT_PLAN.md](docs/MULTI_FORMAT_PLAN.md) | 多格式扩展方案 |
 | [docs/EXECUTION_PLAN.md](docs/EXECUTION_PLAN.md) | 分阶段执行与验收 |

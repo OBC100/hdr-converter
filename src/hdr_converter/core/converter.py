@@ -18,7 +18,14 @@ from .hdr_options import (
     DEFAULT_BASE_BITS,
     DEFAULT_GAINMAP_BITS,
     DEFAULT_GAINMAP_SCALE,
+    DEFAULT_RTX_CONTRAST,
+    DEFAULT_RTX_MAX_LUMINANCE,
+    DEFAULT_RTX_MIDDLE_GRAY,
+    DEFAULT_RTX_SATURATION,
+    DEFAULT_RTX_VSR_SCALE,
     HdrDeliveryMode,
+    RtxEnhanceMode,
+    RtxVsrQuality,
     SdrToneMap,
     normalize_container_bits,
     normalize_gainmap_scale,
@@ -46,6 +53,14 @@ class ConvertSettings:
     jpeg_subsampling: JpegSubsampling = DEFAULT_JPEG_SUBSAMPLING
     # None=按格式默认（PNG/JPG/JXL 开；HEIF/AVIF 关）；见 icc_policy
     embed_icc: bool | None = None
+    # NVIDIA RTX Video（TrueHDR / VSR）；需 hdr_rtx_bridge.dll
+    rtx_enhance: RtxEnhanceMode = RtxEnhanceMode.OFF
+    rtx_contrast: int = DEFAULT_RTX_CONTRAST
+    rtx_saturation: int = DEFAULT_RTX_SATURATION
+    rtx_middle_gray: int = DEFAULT_RTX_MIDDLE_GRAY
+    rtx_max_luminance: int = DEFAULT_RTX_MAX_LUMINANCE
+    rtx_vsr_quality: RtxVsrQuality = RtxVsrQuality.HIGH
+    rtx_vsr_scale: int = DEFAULT_RTX_VSR_SCALE
 
     def to_encode_options(
         self,
@@ -104,8 +119,8 @@ def convert_file(
     input_path = Path(input_path)
     output_path = Path(output_path)
 
-    # Stage E：同格式 Direct 且色彩参数一致 → 字节直通
-    if raw is None:
+    # Stage E：同格式 Direct 且色彩参数一致 → 字节直通（RTX 增强时禁用）
+    if raw is None and settings.rtx_enhance == RtxEnhanceMode.OFF:
         from .passthrough import try_passthrough
 
         if try_passthrough(input_path, output_path, settings):
@@ -137,6 +152,20 @@ def convert_file(
             )
 
     raw = load_source_raw(input_path, cache=decode_cache, raw=raw)
+    if settings.rtx_enhance != RtxEnhanceMode.OFF:
+        from .rtx_video import apply_rtx_enhance
+
+        # RTX 增强不走直通；结果尺寸可能因 VSR 变化，且勿写入未增强缓存键
+        raw = apply_rtx_enhance(
+            raw,
+            settings.rtx_enhance,
+            contrast=settings.rtx_contrast,
+            saturation=settings.rtx_saturation,
+            middle_gray=settings.rtx_middle_gray,
+            max_luminance=settings.rtx_max_luminance,
+            vsr_quality=settings.rtx_vsr_quality,
+            vsr_scale=settings.rtx_vsr_scale,
+        )
     delivery = resolve_hdr_delivery(
         settings.output_format,
         settings.curve,
