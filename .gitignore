@@ -1,0 +1,28 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+!docs/
+*.spec
+.pytest_cache/
+.mypy_cache/
+.cursor/
+test_output/
+scripts/_test_out/
+*.jxr
+_t.*
+*.log
+
+# 本地大样张 / 临时图（源码与 ICC 资产不忽略）
+/samples/
+/tmp/
+*.exr
+*.hdr
+
+# RTX Video SDK 专有运行时（勿提交 NVIDIA DLL）
+**/nvngx_*.dll
+**/NV_RTX_VIDEO_SDK/
+native/rtx_bridge/build/
+native/rtx_bridge/out/

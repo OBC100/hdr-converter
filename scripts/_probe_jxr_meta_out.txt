@@ -1,0 +1,35 @@
+=== filesystem ===
+name=Horizon Forbidden West™ Complete Edition v1.5.80.0 2026_6_29 13_21_29.jxr
+size=23759206
+ctime=1782710489.6333463
+mtime=1782710490.3910067
+
+=== container header ===
+head16=4949bc01080000000c00bc0201001f04 b'II\xbc\x01\x08\x00\x00\x00\x0c\x00\xbc\x02\x01\x00\x1f\x04'
+endian: little (II)
+TIFF magic number: 444 (expect 42)
+first IFD offset: 8
+
+--- IFD @ 8 entries=12 ---
+    700 XMP                          type=1 count=1055 -> <1055 bytes> head=3c3f787061636b657420626567696e3d
+  48129 PixelFormat                  type=1 count=16 -> 24c3dd6f034efe4bb1853d77768dc93a
+  48130 Transformation               type=4 count=1 -> 0
+  48132 ImageWidth_WMP               type=4 count=1 -> 0
+  48256 Padding                      type=4 count=1 -> 3840
+  48257 Tag_48257                    type=4 count=1 -> 2160
+  48258 Tag_48258                    type=11 count=1 -> 96.0
+  48259 Tag_48259                    type=11 count=1 -> 96.0
+  48320 Tag_48320                    type=4 count=1 -> 1230
+  48321 Tag_48321                    type=4 count=1 -> 23739292
+  48322 Tag_48322                    type=4 count=1 -> 23740522
+  48323 Tag_48323                    type=4 count=1 -> 18684
+  next IFD: 0
+
+=== ascii / xml markers ===
+find b'<?xpacket': 158
+find b'<x:xmpmeta': 213
+find b'Exif': -1
+find b'ICC_PROFILE': -1
+find b'http://': 269
+find b'Adobe': -1
+find b'Microsoft': 598

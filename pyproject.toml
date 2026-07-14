@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hdr-converter"
+version = "0.1.0"
+description = "多格式 HDR/SDR 转换器：JXR/PNG/JPEG/HEIF/AVIF/JXL 互转"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.26.0",
+    "colour-science>=0.4.4",
+    "imagecodecs>=2024.9.22",
+    "PyQt6>=6.6.0",
+    "PyQt6-Fluent-Widgets>=1.6.0",
+    "pillow>=10.0.0",
+    "pillow-heif>=0.16.0",
+    "pyoxipng>=9.1.1",
+]
+
+[project.optional-dependencies]
+build = ["pyinstaller>=6.0"]
+
+[project.scripts]
+hdr-converter = "hdr_converter.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"hdr_converter.core.assets" = ["*.icc"]
+"hdr_converter.gui.i18n" = ["locales/*.json"]

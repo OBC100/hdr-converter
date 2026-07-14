@@ -1,0 +1,8 @@
+numpy>=1.26.0
+colour-science>=0.4.4
+imagecodecs>=2024.9.22
+PyQt6>=6.6.0
+PyQt6-Fluent-Widgets>=1.6.0
+pillow>=10.0.0
+pillow-heif>=0.16.0
+pyoxipng>=9.1.1

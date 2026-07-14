@@ -1,0 +1,87 @@
+LR vs NATIVE Ultra HDR 结构对比报告
+
+
+======================================================================
+LR: Horizon Forbidden West™ Complete Edition v1.5.80.0 2026_2_16 18_27_39.png @ 66.7%(RGB_32_) _ 2026_6_7 4_58_59.jpg
+  size=3326185 EOIs=[12764, 25306, 2119035, 3326183] secondary@2119037
+  PRIMARY header:
+    @      2 Exif   seg=12762
+    @  12766 0xED   seg=12540
+    @  25308 ICC    seg=  564 548B 'APPL'
+    @  25874 XMP    seg=10338 xml=10336B
+    @  36214 MPF    seg=   88 img0=0x20030000/2119037/0 img1=0x00050000/1207148/2082815
+    @  36304 ISO    seg=   34 meta=4B flags=?
+    @  36340 0xDB   seg=  132
+    @  36474 0xDD   seg=    4
+    @  36480 0xEE   seg=   14
+    @  36496 SOF0   seg=   17 comps=3
+    @  36515 0xC4   seg=  253
+    SOS @36770 scan_len=12
+  SECONDARY header:
+    @2119039 XMP    seg= 1106 xml=1104B
+    @2120147 ISO    seg=  171 meta=141B flags=0xC0 ch=3 [multi_ch, use_base_cg]
+    @2120320 0xDB   seg=  132
+    @2120454 0xDD   seg=    4
+    @2120460 0xEE   seg=   14
+    @2120476 SOF0   seg=   17 comps=3
+    @2120495 0xC4   seg=  213
+    SOS @2120710 scan_len=12
+
+======================================================================
+NATIVE: native_uhdr.jpg
+  size=1668198 EOIs=[1436717, 1668196] secondary@1436719
+  PRIMARY header:
+    @      2 ICC    seg=  485 469B ''
+    @    489 XMP    seg= 2914 xml=2912B
+    @   3405 MPF    seg=   88 img0=0x20030000/1436717/0 img1=0x00050000/231479/1433304
+    @   3495 ISO    seg=   34 meta=4B flags=?
+    @   3531 0xE0   seg=   16
+    @   3549 0xDB   seg=   67
+    @   3618 0xDB   seg=   67
+    @   3687 SOF0   seg=   17 comps=3
+    @   3706 0xC4   seg=   31
+    @   3739 0xC4   seg=  181
+    @   3922 0xC4   seg=   31
+    @   3955 0xC4   seg=  181
+    SOS @4138 scan_len=12
+  SECONDARY header:
+    @1436721 XMP    seg= 2991 xml=2989B
+    @1439714 ISO    seg=  171 meta=141B flags=0xC0 ch=3 [multi_ch, use_base_cg]
+    @1439887 0xE0   seg=   16
+    @1439905 0xDB   seg=   67
+    @1439974 0xDB   seg=   67
+    @1440043 SOF0   seg=   17 comps=3
+    @1440062 0xC4   seg=   31
+    @1440095 0xC4   seg=  181
+    @1440278 0xC4   seg=   31
+    @1440311 0xC4   seg=  181
+    SOS @1440494 scan_len=12
+
+======================================================================
+关键差异摘要
+
+1. 容器模式
+   LR:    primary XMP (Container Directory) + secondary XMP + secondary ISO
+          primary XMP items: 1
+          secondary XMP items: 0
+   NATIVE: 无 XMP，仅 ISO primary stub + ISO secondary
+          secondary XMP items: 0
+
+2. MPF 属性 (LR 使用 Adobe 扩展值)
+   LR:     primary=0x20030000  secondary=0x00050000
+   NATIVE: primary=0x00030000  secondary=0x00000000
+
+3. ISO secondary 元数据
+   LR:     141B flags=0xC0 ch=3 [multi_ch, use_base_cg]
+           hex=00000000c0000000000000000100010a0200008000c76947004000000000012fec0000800020b6402a4000000001000000400000000100000040000000cc9e40004000000000012feb000080001f358ac44000000001000000400000000100000040000000ceb951c04000000000012ff5000080001eb5aa974000000001000000400000000100000040000000
+   NATIVE: 141B flags=0xC0 ch=3 [multi_ch, use_base_cg]
+           hex=00000000c00000000000000001086b15d7017f4e180000000000000001086b15d7017f4e180000000100000001000000000000000100000000000000010000000000000001086b15d7017f4e180000000100000001000000000000000100000000000000010000000000000001086b15d7017f4e18000000010000000100000000000000010000000000000001
+
+4. baseline ICC
+   LR: Display P3 548B (appl) | NATIVE: 自生成 448B
+
+5. 副图增益图 ICC
+   LR: 无 | NATIVE: 嵌入 4344B HDR ICC (libjxl)
+
+LR primary XMP Container Items:
+  hdrgm:Version="1.0"
